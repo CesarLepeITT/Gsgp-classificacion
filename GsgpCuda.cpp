@@ -2425,3 +2425,97 @@ void saveModelIndividuals(std::string path, std::string outputNameFiles, int i){
     }
   }
 }
+
+/**
+ * @brief Applies the sigmoid activation function to a 2D matrix.
+ *
+ * This CUDA function utilizes multiple threads to apply the sigmoid activation function 
+ * to each element of a matrix of size `nx` x `ny`. The sigmoid is defined as:
+ * \f[
+ *     \text{sigmoid}(x) = \frac{1}{1 + e^{-\alpha x}}
+ * \f]
+ *
+ * @param semantic Pointer to a 1D array that contains the matrix values.
+ * @param alpha Adjustment parameter for the sigmoid function. It controls the slope of the sigmoid curve.
+ * @param nx Number of columns in the matrix.
+ * @param ny Number of rows in the matrix.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void ActivationFunction(float *semantic, float alpha, int nx, int ny)
+{
+    unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int iy = threadIdx.y + blockIdx.y * blockDim.y;
+    unsigned int tid = iy * nx + ix;
+
+    // Check if the thread is within the matrix bounds
+    if (tid < nx * ny && ix < nx && iy < ny)
+    {
+        // Apply the sigmoid activation function to the current value
+        semantic[tid] = fdividef(1, 1 + exp(-1 * alpha * semantic[tid]));
+    }
+}
+
+/**
+ * @brief Applies the sigmoid activation function to a 2D matrix.
+ *
+ * This CUDA function utilizes multiple threads to apply the sigmoid activation function 
+ * to each element of a matrix of size `nx` x `ny`. The sigmoid is defined as:
+ * \f[
+ *     \text{sigmoid}(x) = \frac{1}{1 + e^{-\alpha x}}
+ * \f]
+ *
+ * @param semantic Pointer to a 2D array that contains the matrix values.
+ * @param sigmoidSemantic Pointer to a 2D array that contains the sigmoid matriz values
+ * @param alpha Adjustment parameter for the sigmoid function. It controls the slope of the sigmoid curve.
+ * @param nx Number of columns in the matrix.
+ * @param ny Number of rows in the matrix.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void ActivationFunction(float *semantic, float * sigmoidSemantic, float alpha, int nx, int ny)
+{
+    unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int iy = threadIdx.y + blockIdx.y * blockDim.y;
+    unsigned int tid = iy * nx + ix;
+
+    // Check if the thread is within the matrix bounds
+    if (tid < nx * ny && ix < nx && iy < ny)
+    {
+        // Apply the sigmoid activation function to the current value
+        sigmoidSemantic[tid] = fdividef(1, 1 + exp(-1 * alpha * semantic[tid]));
+    }
+}
+
+
+
+/**
+ * @brief Converts an integer array into binary labels based on a reference value.
+ *
+ * This CUDA kernel processes a 1D array of integers (`outputArray`) and sets each 
+ * element to 1 if it matches the specified `referenceValue`, or to 0 otherwise. 
+ * It is designed to operate in parallel across multiple threads in a CUDA grid.
+ *
+ * @param outputArray Pointer to a 1D array of integers that will be modified to contain binary labels.
+ * @param referenceValue The value against which each element in the array is compared.
+ * @param arraySize The total number of elements in the array.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void SetBinaryLabels(int *outputArray, int referenceValue, int arraySize)
+{
+    unsigned int ix = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int iy = threadIdx.y + blockIdx.y * blockDim.y;
+    unsigned int tid = iy * arraySize + ix;
+
+    if (tid < arraySize  && ix < arraySize)
+    {
+        if (outputArray[ix] == referenceValue)
+            outputArray[ix] = 1;
+        else
+            outputArray[ix] = 0;
+    }
+}
