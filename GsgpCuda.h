@@ -98,7 +98,8 @@ typedef struct cfg_{
   int normalize;
   int do_min_max;
   int protected_division;
-  char logPath[100];        
+  char logPath[100];
+  float alpha;        
 }cfg;
 
 /// struct variable containing the values of the parameters specified in the configuration.ini file
@@ -696,3 +697,65 @@ __host__ void readPopulation( float *initialPopulation, float *randomTrees, int 
 * \file     GsgpCuda.cpp
 */
 __host__ void evaluate_data(std::string path, int generations, float *initialPopulation, float *randomTrees, std::ofstream& OUT, std::string log, int nrow, int nvarTest);
+
+/**
+ * @brief Applies the sigmoid activation function to a 2D matrix.
+ *
+ * This CUDA function utilizes multiple threads to apply the sigmoid activation function 
+ * to each element of a matrix of size `nx` x `ny`. The sigmoid is defined as:
+ * 
+ * \f[
+ *     \text{sigmoid}(x) = \frac{1}{1 + e^{-\alpha x}}
+ * \f]
+ *
+ * @param semantic Pointer to a 1D array that contains the matrix values.
+ * @param alpha Adjustment parameter for the sigmoid function. It controls the slope of the sigmoid curve.
+ * @param nx Number of columns in the matrix.
+ * @param ny Number of rows in the matrix.
+ *
+ * @note The function checks if the current thread is within the matrix bounds before applying the operation.
+ * 
+ * @attention Ensure the grid and block dimensions are set correctly to cover the entire matrix.
+ *
+ * @warning The alpha parameter significantly impacts the steepness of the sigmoid function. Adjust with care based on your model.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void ActivationFunction(float *semantic, float alpha, int nx, int ny);
+
+/**
+ * @brief Applies the sigmoid activation function to a 2D matrix.
+ *
+ * This CUDA function utilizes multiple threads to apply the sigmoid activation function 
+ * to each element of a matrix of size `nx` x `ny`. The sigmoid is defined as:
+ * \f[
+ *     \text{sigmoid}(x) = \frac{1}{1 + e^{-\alpha x}}
+ * \f]
+ *
+ * @param semantic Pointer to a 2D array that contains the matrix values.
+ * @param sigmoidSemantic Pointer to a 2D array that contains the sigmoid matriz values
+ * @param alpha Adjustment parameter for the sigmoid function. It controls the slope of the sigmoid curve.
+ * @param nx Number of columns in the matrix.
+ * @param ny Number of rows in the matrix.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void ActivationFunction(float *semantic, float * sigmoidSemantic, float alpha, int nx, int ny);
+
+/**
+ * @brief Converts an integer array into binary labels based on a reference value.
+ *
+ * This CUDA kernel processes a 1D array of integers (`outputArray`) and sets each 
+ * element to 1 if it matches the specified `referenceValue`, or to 0 otherwise. 
+ * It is designed to operate in parallel across multiple threads in a CUDA grid.
+ *
+ * @param outputArray Pointer to a 1D array of integers that will be modified to contain binary labels.
+ * @param referenceValue The value against which each element in the array is compared.
+ * @param arraySize The total number of elements in the array.
+ *
+ * @author César Lepe García
+ * @date October 25, 2024
+ */
+__global__ void SetBinaryLabels(int *outputArray, int referenceValue, int arraySize);
